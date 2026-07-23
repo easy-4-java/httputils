@@ -1,0 +1,36 @@
+package io.github.easy4j.httputils.handler;
+
+import java.io.ByteArrayInputStream;
+import java.io.IOException;
+
+import org.apache.commons.httpclient.HttpClient;
+import org.apache.commons.httpclient.HttpMethodBase;
+import org.apache.commons.httpclient.HttpStatus;
+import org.apache.commons.httpclient.StatusLine;
+
+import io.github.easy4j.httputils.exception.HttpResponseException;
+
+/**
+ * http请求响应处理：返回ByteArrayInputStream对象
+ * @author <a href="https://github.com/vindell">vindell</a>
+ */
+public class StreamResponseHandler implements ResponseHandler<ByteArrayInputStream> {
+
+	@Override
+	public void preHandle(HttpClient httpclient) {
+		
+	}
+
+	@Override
+	public ByteArrayInputStream handleResponse(HttpMethodBase httpMethod) throws IOException {
+		StatusLine statusLine = httpMethod.getStatusLine();
+		int status = statusLine.getStatusCode();
+		if (status >= HttpStatus.SC_OK && status < HttpStatus.SC_MULTIPLE_CHOICES) {
+			// 响应内容
+			return new ByteArrayInputStream(httpMethod.getResponseBody());
+		} else {
+			throw new HttpResponseException(statusLine.getStatusCode(), statusLine.getReasonPhrase());
+		}
+	}
+
+}
