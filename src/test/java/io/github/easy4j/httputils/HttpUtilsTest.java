@@ -1,55 +1,36 @@
-/*
- * Copyright (c) 2018 (https://github.com/hiwepy).
- *
- * Licensed under the Apache License, Version 2.0 (the "License"); you may not
- * use this file except in compliance with the License. You may obtain a copy of
- * the License at
- *
- * http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
- * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
- * License for the specific language governing permissions and limitations under
- * the License.
- */
 package io.github.easy4j.httputils;
 
-import java.io.File;
-
+import com.sun.net.httpserver.HttpServer;
+import io.github.easy4j.httputils.handler.PlainTextResponseHandler;
 import org.junit.Test;
 
-import io.github.easy4j.httputils.handler.FileResponseHandler;
-import io.github.easy4j.httputils.handler.PlainTextResponseHandler;
-import io.github.easy4j.httputils.handler.ResponseHandler;
+import java.io.IOException;
+import java.io.OutputStream;
+import java.net.InetSocketAddress;
+import java.nio.charset.StandardCharsets;
 
-import junit.framework.TestCase;
+import static org.junit.Assert.assertEquals;
 
-public class HttpUtilsTest extends TestCase{
+/** Verifies that the public GET helper handles a local HTTP response. */
+public class HttpUtilsTest {
 
-	protected ResponseHandler<String> textHandler = new PlainTextResponseHandler();
-	protected ResponseHandler<File> fileHandler = new FileResponseHandler(new File("d://baidu.html"));
-	
-	@Test
-	public void testHttpUtil()  {
-		
-		try {
-			String baseURL = "http://www.baidu.com ";
-			
-			//String resultHtml = HttpClientUtils.httpRequestWithGet(baseURL, textHandler);
-			
-			//System.out.println(resultHtml);
-			
-			File resultFile = HttpClientUtils.httpRequestWithGet(baseURL, fileHandler);
-			
-			
-		} catch (Exception e) {
-			e.printStackTrace();
-		}
-		
-		
-		
-	}
-	
-	
+    @Test
+    public void getReturnsLoopbackResponse() throws IOException {
+        HttpServer server = HttpServer.create(new InetSocketAddress("127.0.0.1", 0), 0);
+        server.createContext("/health", exchange -> {
+            byte[] body = "ready".getBytes(StandardCharsets.UTF_8);
+            exchange.getResponseHeaders().set("Content-Type", "text/plain; charset=UTF-8");
+            exchange.sendResponseHeaders(200, body.length);
+            try (OutputStream output = exchange.getResponseBody()) {
+                output.write(body);
+            }
+        });
+        server.start();
+        try {
+            String url = "http://127.0.0.1:" + server.getAddress().getPort() + "/health";
+            assertEquals("ready", HttpClientUtils.httpRequestWithGet(url, new PlainTextResponseHandler()));
+        } finally {
+            server.stop(0);
+        }
+    }
 }
